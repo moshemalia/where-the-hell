@@ -21,28 +21,16 @@ export const q = async (sql, params = []) => {
 
 const app = express()
 
-// CORS: מאפשר *.vercel.app + לוקאל + מה-ENV (CORS_ORIGINS)
 
-const extra = (process.env.CORS_ORIGINS || '')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean);
-
-const allowed = [
-  /^https?:\/\/([a-z0-9-]+\.)*vercel\.app(?::\d+)?$/i,
-  'https://where-the-hell.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  ...extra,
-];
-
+// CORS פתוח (מאפשר כל Origin). אין cookies, אז אפשר בלי credentials
 app.use(cors({
-  origin: allowed,       // שים לב: מערך/RegExp — בלי callback
-  credentials: false,    // אין cookies / credentials
+  origin: true,          // משקף את ה-Origin אוטומטית
+  credentials: false,    // לא משתמשים ב-cookies/session
 }));
 
+// Preflight
 app.options('*', cors({
-  origin: allowed,
+  origin: true,
   credentials: false,
 }));
 
