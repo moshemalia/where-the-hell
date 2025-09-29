@@ -29,7 +29,7 @@ const extra = (process.env.CORS_ORIGINS || '')
   .filter(Boolean);
 
 const allowed = [
-  /^https?:\/\/([a-z0-9-]+\.)*vercel\.app$/i,
+  /^https?:\/\/([a-z0-9-]+\.)*vercel\.app(?::\d+)?$/i,
   'http://localhost:5173',
   'http://localhost:3000',
   ...extra,
@@ -38,8 +38,9 @@ const allowed = [
 const corsHandler = cors({
   origin(origin, cb) {
     if (!origin) return cb(null, true);
+    const o = origin.trim();
     const ok = allowed.some(rule =>
-      rule instanceof RegExp ? rule.test(origin) : rule === origin
+      rule instanceof RegExp ? rule.test(o) : rule === o
     );
     cb(ok ? null : new Error(`Not allowed by CORS: ${origin}`), ok);
   },
