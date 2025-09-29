@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react'
+// src/pages/admin/Login.jsx
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogIn, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
@@ -8,32 +9,36 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [uiLoading, setUiLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { signIn, user } = useAuth()
+  // מה-hook: user + loading (טעינת session מ-localStorage)
+  const { signIn, user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
 
+  // אם כבר מחוברים – ננתב לדשבורד (רק אחרי שה-hook סיים להיטען)
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       navigate('/admin/dashboard', { replace: true })
     }
-  }, [user, navigate])
+  }, [authLoading, user, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setUiLoading(true)
     setError('')
 
     const { error } = await signIn(email, password)
-
     if (error) {
       setError('פרטי ההתחברות שגויים. נסו שוב או פנו למנהל המערכת.')
-    } else {
-      navigate('/admin/dashboard')
+      setUiLoading(false)
+      return
     }
 
-    setLoading(false)
+    // הניווט יתבצע גם ברגע שה-user יתעדכן ב-hook,
+    // אבל ננווט מידית לטובת UX
+    navigate('/admin/dashboard', { replace: true })
+    setUiLoading(false)
   }
 
   return (
@@ -48,10 +53,11 @@ export default function Login() {
             <p className="text-brand-muted text-sm">התחברו באמצעות הדוא"ל והסיסמה שקיבלתם ממנהל הטכנולוגיות.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
             <div>
               <label className="block text-sm text-brand-muted mb-1">דוא"ל</label>
               <input
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -65,6 +71,7 @@ export default function Login() {
               <label className="block text-sm text-brand-muted mb-1">סיסמה</label>
               <div className="relative">
                 <input
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -76,6 +83,7 @@ export default function Login() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-white"
+                  aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -90,10 +98,10 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={uiLoading || authLoading}
               className="w-full brand-primary py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {loading ? (
+              {uiLoading || authLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
                 <>
