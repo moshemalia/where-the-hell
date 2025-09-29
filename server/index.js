@@ -25,22 +25,26 @@ const app = express()
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
-    // שיקוף ה-Origin הבטוח (אין cookies אצלנו)
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   } else {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD');
   res.setHeader(
     'Access-Control-Allow-Headers',
     req.headers['access-control-request-headers'] || 'Content-Type, Authorization'
   );
-  // אין לנו credentials בצד השרת, לכן לא מוסיפים Allow-Credentials
   if (req.method === 'OPTIONS') return res.status(204).end();
   next();
 });
+
 // --- סוף CORS ---
+
+app.get('/__diag', (req, res) => {
+  res.json({ ok: true, cors: 'hard-override' });
+});
+
 
 console.log('CORS override active. Commit:', process.env.RENDER_GIT_COMMIT || 'unknown');
 
