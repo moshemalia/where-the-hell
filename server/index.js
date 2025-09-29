@@ -4,26 +4,53 @@ import cors from 'cors'
 import crypto from 'node:crypto'
 import process from 'node:process'
 import { XMLParser } from 'fast-xml-parser'
-import { db } from './libsql.js'
+
 
 const app = express()
+app.use(express.json({ limit: '10mb' }))
+
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
+// 1) קורא מ-ENV (רשימה מופרדת בפסיקים) + דיפולטים ללוקאל
+const extraAllowed = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// 2) פונקציה שבודקת אם המקור מותר
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // curl/Postman/healthchecks בלי Origin
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+
+    // מותר אם:
+    // (א) הוגדר מפורשות ב-ENV
+    if (extraAllowed.includes(origin)) return true;
+
+    // (ב) כל תת-דומיין של vercel.app (כולל preview)
+    if (host.endsWith('.vercel.app')) return true;
+
+    // (ג) localhost בפיתוח
+    if (host === 'localhost' && (u.port === '5173' || u.port === '3000')) return true;
+
+    return false;
+  } catch {
+    return false;
+  }
+};
+
+// 3) הפעלת ה-CORS
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);                    // curl/Postman וכו'
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error('Not allowed by CORS: ' + origin), false);
-  },
+  origin: (origin, cb) => cb(isAllowedOrigin(origin) ? null : new Error('Not allowed by CORS: ' + origin), isAllowedOrigin(origin)),
+  credentials: true,
 }));
 
 
 
-app.use(cors())
-app.use(express.json({ limit: '10mb' }))
 
 const hashPassword = (value) => crypto.createHash('sha256').update(String(value)).digest('hex')
 
@@ -32,10 +59,15 @@ const xmlParser = new XMLParser({ ignoreAttributes: false, trimValues: true })
 const ensureArray = (value) => (Array.isArray(value) ? value : value ? [value] : [])
 
 // Floors
-app.get('/api/floors', (req, res) => {
-  const rows = db.prepare('SELECT floor_number, floor_name, image_url FROM floors ORDER BY floor_number').all()
-  res.json(rows)
+app.get('/api/floors', async (req, res) => {
+  try {
+    const rows = await q('SELECT floor_number, floor_name, image_url FROM floors ORDER BY floor_number;')
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
 })
+
 
 app.post('/api/floors', (req, res) => {
   const { floor_number, floor_name, image_url, clone_from } = req.body
@@ -117,10 +149,15 @@ app.delete('/api/floors/:floor_number', (req, res) => {
 })
 
 // Rooms
-app.get('/api/rooms', (req, res) => {
-  const rows = db.prepare('SELECT room_id, room_name, room_number, floor, x, y FROM rooms ORDER BY room_number').all()
-  res.json(rows)
+app.get('/api/rooms', async (req, res) => {
+  try {
+    const rows = await q('SELECT room_id, room_name, room_number, floor, x, y FROM rooms ORDER BY room_number;')
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
 })
+
 
 app.post('/api/rooms', (req, res) => {
   const { room_id, room_name, room_number, floor, x, y } = req.body
@@ -193,33 +230,30 @@ app.delete('/api/rooms/:room_id', (req, res) => {
 })
 
 // Employees
-app.get('/api/employees', (req, res) => {
-  const rows = db.prepare(`
-    SELECT id,
-           name,
-           name_en,
-           role,
-           department,
-           administration,
-           room_id,
-           floor,
-           email,
-           phone_office,
-           phone_mobile,
-           is_active,
-           is_admin,
-           admin_email
-      FROM employees
-     WHERE COALESCE(is_active, 1) = 1
-     ORDER BY name
-  `).all()
-  res.json(rows)
+app.get('/api/employees', async (req, res) => {
+  try {
+    const rows = await q(`
+      SELECT id, name, name_en, role, department, administration, room_id, floor, email,
+             phone_office, phone_mobile, is_active, is_admin, admin_email
+        FROM employees
+       WHERE COALESCE(is_active, 1) = 1
+       ORDER BY name;
+    `)
+    res.json(rows)
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
 })
 
-app.get('/api/taxonomy', (req, res) => {
-  const roles = db.prepare('SELECT name FROM roles ORDER BY name').all().map(r => r.name)
-  const departments = db.prepare('SELECT name FROM departments ORDER BY name').all().map(d => d.name)
-  res.json({ roles, departments })
+
+app.get('/api/taxonomy', async (req, res) => {
+  try {
+    const rolesRows = await q('SELECT name FROM roles ORDER BY name;')
+    const deptRows  = await q('SELECT name FROM departments ORDER BY name;')
+    res.json({ roles: rolesRows.map(r => r.name), departments: deptRows.map(d => d.name) })
+  } catch (e) {
+    res.status(500).json({ error: String(e) })
+  }
 })
 
 app.post('/api/import/xml', (req, res) => {
