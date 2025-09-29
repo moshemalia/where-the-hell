@@ -30,6 +30,7 @@ const extra = (process.env.CORS_ORIGINS || '')
 
 const allowed = [
   /^https?:\/\/([a-z0-9-]+\.)*vercel\.app(?::\d+)?$/i,
+  'https://where-the-hell.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
   ...extra,
