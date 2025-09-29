@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: radial-gradient(circle at 20% 20%, #431c74 0%, #0b061d 45%, #05030f 100%);
+  color: #f6f5ff;
+}
+
+:root {
+  --brand-bg: #05030f;
+  --brand-surface: #13102b;
+  --brand-surface-alt: #1d1a3c;
+  --brand-primary: #8c3bff;
+  --brand-secondary: #5b6cff;
+  --brand-glow: rgba(140, 59, 255, 0.35);
+  --brand-text: #f6f5ff;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 80% 10%, rgba(91, 108, 255, 0.25), transparent 55%),
+              radial-gradient(circle at 0% 100%, rgba(140, 59, 255, 0.25), transparent 55%);
+  z-index: -1;
+}
+
+.surface-card {
+  background: var(--brand-surface);
+  border: 1px solid rgba(111, 103, 255, 0.15);
+  box-shadow: 0 30px 60px rgba(10, 7, 25, 0.45);
+  color: var(--brand-text);
+}
+
+.surface-card-alt {
+  background: var(--brand-surface-alt);
+  border: 1px solid rgba(111, 103, 255, 0.1);
+  box-shadow: 0 24px 48px rgba(12, 6, 32, 0.42);
+  color: var(--brand-text);
+}
+
+.brand-gradient {
+  background-image: linear-gradient(135deg, #8c3bff 0%, #5b6cff 50%, #2cc4ff 100%);
+  color: #fff;
+}
+
+.brand-border {
+  border: 1px solid rgba(111, 103, 255, 0.35);
+}
+
+.text-brand-muted {
+  color: rgba(208, 210, 255, 0.78);
+}
+
+button.brand-primary {
+  background-image: linear-gradient(135deg, #8c3bff 0%, #5b6cff 100%);
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 18px 32px rgba(92, 69, 255, 0.35);
+}
+
+button.brand-primary:hover {
+  filter: brightness(1.08);
+}
