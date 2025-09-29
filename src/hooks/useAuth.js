@@ -1,65 +1,71 @@
-﻿import { api } from '../api';
-
+// src/hooks/useAuth.js
+import { api } from '../api'
 import { useCallback, useEffect, useState } from 'react'
 
-const STORAGE_KEY = 'where-the-hell-auth'
+// מפתח יחיד ועקבי לאחסון ה-session
+const STORAGE_KEY = 'wth_admin_v1'
 
-let currentUser = null
-const subscribers = new Set()
-
-const hydrateFromStorage = () => {
+// --- אחסון/שליפה מ-localStorage ---
+function readUser() {
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) return null
   try {
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
 }
 
-if (typeof window !== 'undefined') {
-  const stored = hydrateFromStorage()
-  if (stored) {
-    currentUser = stored
-  }
+function writeUser(user) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
-const notify = () => {
-  for (const subscriber of subscribers) {
-    subscriber(currentUser)
-  }
+function clearUserStorage() {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(STORAGE_KEY)
+}
+
+// --- מנוי גלובלי לשינויים (בין קומפוננטים/טאבים) ---
+let currentUser = readUser()
+const subscribers = new Set()
+function notify() {
+  for (const fn of subscribers) fn(currentUser)
 }
 
 export function useAuth() {
+  // נטען בתחילה ממצב גלובלי, אך נסמן loading עד הידרציה ראשונית
   const [user, setUser] = useState(currentUser)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const update = (nextUser) => setUser(nextUser)
-    subscribers.add(update)
+    // הידרציה ראשונית + סיום loading
+    currentUser = readUser()
+    setUser(currentUser)
+    setLoading(false)
 
-    const handleStorage = (event) => {
-      if (event.key === STORAGE_KEY) {
-        currentUser = hydrateFromStorage()
-        update(currentUser)
+    // רישום למערכת המנויים
+    const sub = (u) => setUser(u)
+    subscribers.add(sub)
+
+    // סנכרון בין טאבים
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEY) {
+        currentUser = readUser()
+        setUser(currentUser)
       }
     }
-
-    window.addEventListener('storage', handleStorage)
+    window.addEventListener('storage', onStorage)
 
     return () => {
-      subscribers.delete(update)
-      window.removeEventListener('storage', handleStorage)
+      subscribers.delete(sub)
+      window.removeEventListener('storage', onStorage)
     }
   }, [])
 
+  // התחברות
   const signIn = useCallback(async (email, password) => {
+    if (!email || !password) return { error: 'Email and password are required.' }
     setLoading(true)
     try {
-      if (!email || !password) {
-        return { error: 'Email and password are required.' }
-      }
       const res = await api('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,15 +73,13 @@ export function useAuth() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Invalid credentials' }))
-        return { error: err.error || 'Invalid credentials' }
+        return { error: err?.error || 'Invalid credentials' }
       }
-      const data = await res.json()
+      const data = await res.json() // { id, email, name }
       currentUser = { id: data.id, email: data.email, name: data.name }
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser))
-      }
+      writeUser(currentUser)
       notify()
-      return { error: null }
+      return { error: null, user: currentUser }
     } catch {
       return { error: 'Unable to sign in. Please try again.' }
     } finally {
@@ -83,20 +87,21 @@ export function useAuth() {
     }
   }, [])
 
-  const signOut = useCallback(async () => {
+  // התנתקות
+  const signOut = useCallback(() => {
+    clearUserStorage()
     currentUser = null
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY)
-    }
     notify()
     return { error: null }
   }, [])
 
+  // החזר גם כ-aliases למקרה שקוד אחר מצפה ל-login/logout
   return {
     user,
     loading,
     signIn,
-    signOut
+    signOut,
+    login: signIn,
+    logout: signOut,
   }
 }
-
