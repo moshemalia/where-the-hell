@@ -7,28 +7,25 @@ import { XMLParser } from 'fast-xml-parser'
 
 
 const app = express()
-app.use(express.json({ limit: '10mb' }))
 
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-// 1) קורא מ-ENV (רשימה מופרדת בפסיקים) + דיפולטים ללוקאל
+// קריאה מ-ENV (רשימה מופרדת בפסיקים) + דיפולט ללוקאל
 const extraAllowed = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:3000')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-// 2) פונקציה שבודקת אם המקור מותר
 const isAllowedOrigin = (origin) => {
-  if (!origin) return true; // curl/Postman/healthchecks בלי Origin
+  if (!origin) return true; // curl/Postman/healthchecks ללא Origin
   try {
     const u = new URL(origin);
     const host = u.hostname;
 
-    // מותר אם:
-    // (א) הוגדר מפורשות ב-ENV
+    // (א) רשימה מפורשת מה-ENV
     if (extraAllowed.includes(origin)) return true;
 
     // (ב) כל תת-דומיין של vercel.app (כולל preview)
@@ -43,12 +40,14 @@ const isAllowedOrigin = (origin) => {
   }
 };
 
-// 3) הפעלת ה-CORS
-app.use(cors({
+
+const corsHandler = cors({
   origin: (origin, cb) => cb(isAllowedOrigin(origin) ? null : new Error('Not allowed by CORS: ' + origin), isAllowedOrigin(origin)),
   credentials: true,
-}));
+});
 
+app.use(corsHandler);
+app.options('*', corsHandler); // preflight
 
 
 
