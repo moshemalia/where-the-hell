@@ -502,8 +502,26 @@ app.get('/api/health-db', async (_req, res) => {
 })
 
 
+app.use((err, req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    req.headers['access-control-request-headers'] || 'Content-Type, Authorization'
+  );
+  res.status(err?.status || 500).json({ ok: false, error: err?.message || 'Server error' });
+});
+
+
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`API listening on :${PORT}`);
 });
+
