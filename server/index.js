@@ -20,10 +20,6 @@ app.use(cors({
   },
 }));
 
-const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`API listening on :${PORT}`);
-});
 
 
 app.use(cors())
@@ -814,18 +810,17 @@ app.post('/api/auth/login', (req, res) => {
 //   console.log(`SQLite API listening on :${PORT}`)
 // })
 
-
-
-
-
-
-
 app.get('/api/health-db', async (req, res) => {
   try {
     const [{ c: rooms }] = await q('SELECT COUNT(*) AS c FROM rooms;');
     const [{ c: employees }] = await q('SELECT COUNT(*) AS c FROM employees;');
     res.json({ ok: true, rooms, employees });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: String(e) });
-  }
+  } catch (e) { res.status(500).json({ ok: false, error: String(e) }); }
+});
+
+
+
+const PORT = process.env.PORT || 3001
+app.listen(PORT, () => {
+  console.log(`API listening on :${PORT}`);
 });
