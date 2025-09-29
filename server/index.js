@@ -36,20 +36,16 @@ const allowed = [
   ...extra,
 ];
 
-const corsHandler = cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    const o = origin.trim();
-    const ok = allowed.some(rule =>
-      rule instanceof RegExp ? rule.test(o) : rule === o
-    );
-    cb(ok ? null : new Error(`Not allowed by CORS: ${origin}`), ok);
-  },
-  credentials: false,
-});
+app.use(cors({
+  origin: allowed,       // שים לב: מערך/RegExp — בלי callback
+  credentials: false,    // אין cookies / credentials
+}));
 
-app.use(corsHandler);
-app.options('*', corsHandler);
+app.options('*', cors({
+  origin: allowed,
+  credentials: false,
+}));
+
 
 app.use(express.json({ limit: '10mb' }));
 
