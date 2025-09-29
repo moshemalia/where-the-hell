@@ -1,4 +1,5 @@
-﻿import React, { useMemo, useState, useEffect, useRef, useCallback } from "react"
+﻿import { api } from '../../api';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useEmployees } from "../../hooks/useEmployees"
 import { useRooms } from "../../hooks/useRooms"
@@ -105,7 +106,7 @@ export default function EmployeeManagement() {
 
   const fetchTaxonomy = useCallback(async () => {
     try {
-      const response = await fetch('/api/taxonomy')
+      const response = await api('/api/taxonomy')
       if (!response.ok) return
       const data = await response.json()
       if (Array.isArray(data?.roles)) {
@@ -132,7 +133,7 @@ export default function EmployeeManagement() {
     setTableOperationSummary(null)
     setTableProcessing(true)
     try {
-      const response = await fetch(`/api/export/${tableTarget}`)
+      const response = await api(`/api/export/${tableTarget}`)
       if (!response.ok) {
         const errorText = await response.text()
         let message = 'הייצוא נכשל.'
@@ -204,7 +205,7 @@ export default function EmployeeManagement() {
         throw new Error('בקובץ חייב להופיע מערך של רשומות או שדה records הכולל מערך.')
       }
 
-      const response = await fetch(`/api/import/${tableTarget}`, {
+      const response = await api(`/api/import/${tableTarget}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ records: payload })

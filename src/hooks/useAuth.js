@@ -1,4 +1,6 @@
-﻿import { useCallback, useEffect, useState } from 'react'
+﻿import { api } from '../api';
+
+import { useCallback, useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'where-the-hell-auth'
 
@@ -58,7 +60,7 @@ export function useAuth() {
       if (!email || !password) {
         return { error: 'Email and password are required.' }
       }
-      const res = await fetch('/api/auth/login', {
+      const res = await api('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
