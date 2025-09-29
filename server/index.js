@@ -1,7 +1,7 @@
 import express from 'express'
 import crypto from 'node:crypto'
 import process from 'node:process'
-import cors from 'cors';
+
 
 /* eslint-env node */
 import { createClient } from '@libsql/client';
@@ -21,18 +21,30 @@ export const q = async (sql, params = []) => {
 
 const app = express()
 
+// --- HARD CORS OVERRIDE: לפני כל דבר אחר ---
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    // שיקוף ה-Origin הבטוח (אין cookies אצלנו)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    req.headers['access-control-request-headers'] || 'Content-Type, Authorization'
+  );
+  // אין לנו credentials בצד השרת, לכן לא מוסיפים Allow-Credentials
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  next();
+});
+// --- סוף CORS ---
 
-// CORS פתוח (מאפשר כל Origin). אין cookies, אז אפשר בלי credentials
-app.use(cors({
-  origin: true,          // משקף את ה-Origin אוטומטית
-  credentials: false,    // לא משתמשים ב-cookies/session
-}));
+console.log('CORS override active. Commit:', process.env.RENDER_GIT_COMMIT || 'unknown');
 
-// Preflight
-app.options('*', cors({
-  origin: true,
-  credentials: false,
-}));
+
 
 
 app.use(express.json({ limit: '10mb' }));
