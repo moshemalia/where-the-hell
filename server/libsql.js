@@ -1,4 +1,5 @@
 // server/libsql.js — טוען .env מה-root ומתחבר ל-Turso (libSQL)
+import process from 'node:process';
 import { createClient } from '@libsql/client';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
