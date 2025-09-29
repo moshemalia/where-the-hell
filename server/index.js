@@ -21,7 +21,7 @@ export const q = async (sql, params = []) => {
 
 const app = express()
 
-// --- HARD CORS OVERRIDE: לפני כל דבר אחר ---
+// --- CORS HARD OVERRIDE (MUST be first) ---
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -39,14 +39,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- סוף CORS ---
+// לוג וסימון גרסה שרצה על Render
+console.log('CORS hard override ACTIVE, commit:', process.env.RENDER_GIT_COMMIT || 'unknown');
 
+// ראוט דיאגנוסטיקה לאימות הגרסה
 app.get('/__diag', (req, res) => {
-  res.json({ ok: true, cors: 'hard-override' });
+  res.setHeader('X-Commit', (process.env.RENDER_GIT_COMMIT || 'unknown').slice(0,7));
+  res.json({ ok: true, cors: 'hard-override', commit: process.env.RENDER_GIT_COMMIT || 'unknown' });
 });
-
-
-console.log('CORS override active. Commit:', process.env.RENDER_GIT_COMMIT || 'unknown');
 
 
 
@@ -502,6 +502,7 @@ app.get('/api/health-db', async (_req, res) => {
 })
 
 
+// --- GLOBAL ERROR HANDLER (must be last middleware) ---
 app.use((err, req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -524,4 +525,5 @@ const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`API listening on :${PORT}`);
 });
+
 
